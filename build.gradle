@@ -39,13 +39,3 @@ bintray {
         issueTrackerUrl = 'https://github.com/researchgate/archaius-consul/issues'
     }
 }
-
-task sourceJar(type: Jar) {
-    from sourceSets.main.allJava
-}
-
-artifacts {
-    sourceJar
-}
-
-build.dependsOn javadoc
