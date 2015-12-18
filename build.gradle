@@ -37,16 +37,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/researchgate/archaius-consul.git'
         issueTrackerUrl = 'https://github.com/researchgate/archaius-consul/issues'
-        version {
-            name = project.version
-            vcsTag = project.version
-            gpg {
-                sign = true
-                passphrase = project.hasProperty('bintrayGpgPassphrase') ? bintrayGpgPassphrase : ''
-            }
-        }
     }
-    publish = true
 }
 
 task sourceJar(type: Jar) {
