@@ -3,7 +3,6 @@ package net.researchgate.archaius;
 import static net.researchgate.archaius.ConsulConfigurationSource.CONSUL_SERVICE_NAME;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,7 +86,7 @@ public class ConsulConfigurationSourceTest {
 
         consulConfigurationSource.poll(false, null);
 
-        verify(clientFactory, times(1)).getClient("second", 8100);
+        verify(clientFactory, atLeastOnce()).getClient("second", 8100);
         verify(newClient).getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT);
         Thread.sleep(10);
 

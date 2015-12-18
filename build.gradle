@@ -24,8 +24,12 @@ dependencies {
 }
 
 bintray {
+    dryRun = false //Whether to run this as dry-run, without deploying
+    publish = false //If version should be auto published after an upload
+
     user = project.hasProperty('bintrayUser') ? bintrayUser : ''
     key = project.hasProperty('bintrayApiKey') ? bintrayApiKey : ''
+    configurations = ['archives']
     pkg {
         name = 'archaius-consul'
         repo = 'maven'
@@ -33,10 +37,9 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/researchgate/archaius-consul.git'
         issueTrackerUrl = 'https://github.com/researchgate/archaius-consul/issues'
-        configurations = ['archives']
         version {
-            name = version
-            vcsTag = version
+            name = project.version
+            vcsTag = project.version
             gpg {
                 sign = true
                 passphrase = project.hasProperty('bintrayGpgPassphrase') ? bintrayGpgPassphrase : ''
@@ -46,4 +49,12 @@ bintray {
     publish = true
 }
 
-afterReleaseBuild.dependsOn bintrayUpload
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+artifacts {
+    sourceJar
+}
+
+build.dependsOn javadoc
