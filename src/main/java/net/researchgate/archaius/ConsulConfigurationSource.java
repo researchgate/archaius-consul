@@ -42,7 +42,7 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
     private void init(String hostsList, String facility) {
         this.hostsList = hostsList;
         this.facility = facility;
-        this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1);
+        this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1) - (facility.endsWith("/") ? 1 : 0);
     }
 
     @Override
