@@ -1,5 +1,6 @@
 plugins {
     id 'net.researchgate.release' version '2.3.4'
+    id "com.jfrog.bintray" version "1.5"
 }
 
 apply plugin: 'java'
@@ -14,11 +15,35 @@ repositories {
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.7.3'
     compile 'com.ecwid.consul:consul-api:1.1.7'
-    
+
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-all:2.0.2-beta'
     testCompile 'org.powermock:powermock-api-mockito:1.6.3'
     testCompile 'org.powermock:powermock-core:1.6.3'
     testCompile 'org.powermock:powermock-module-junit4:1.6.3'
-
 }
+
+bintray {
+    user = project.hasProperty('bintrayUser') ? bintrayUser : ''
+    key = project.hasProperty('bintrayApiKey') ? bintrayApiKey : ''
+    pkg {
+        name = 'archaius-consul'
+        repo = 'maven'
+        userOrg = 'researchgate'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/researchgate/archaius-consul.git'
+        issueTrackerUrl = 'https://github.com/researchgate/archaius-consul/issues'
+        configurations = ['archives']
+        version {
+            name = version
+            vcsTag = version
+            gpg {
+                sign = true
+                passphrase = project.hasProperty('bintrayGpgPassphrase') ? bintrayGpgPassphrase : ''
+            }
+        }
+    }
+    publish = true
+}
+
+afterReleaseBuild.dependsOn bintrayUpload
