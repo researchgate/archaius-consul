@@ -3,6 +3,7 @@ package net.researchgate.archaius;
 import static net.researchgate.archaius.ConsulConfigurationSource.CONSUL_SERVICE_NAME;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,13 +58,13 @@ public class ConsulConfigurationSourceTest {
         catalogService.setAddress("second");
         catalogService.setServicePort(8100);
         serviceCatalog.add(catalogService);
-        when(consulClient.getHealthChecksForService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT)).thenReturn(new Response<>(new ArrayList<Check>(), 0l, true, 0l));
-        when(consulClient.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT)).thenReturn(new Response<>(serviceCatalog, 0l, true, 0l));
+        when(consulClient.getHealthChecksForService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT)).thenReturn(new Response<>((List<Check>) new ArrayList<Check>(), 0l, true, 0l));
+        when(consulClient.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT)).thenReturn(new Response<>((List<CatalogService>) serviceCatalog, 0l, true, 0l));
     }
 
     @Test
     public void testClientCreation() throws InterruptedException {
-        ArrayList<GetValue> arrayList = new ArrayList<>();
+        List<GetValue> arrayList = new ArrayList<>();
         GetValue intValue = new GetValue();
         intValue.setKey(FACILITY + "/" + "key.int");
         intValue.setValue(BaseEncoding.base64().encode("10".getBytes()));
@@ -82,12 +83,12 @@ public class ConsulConfigurationSourceTest {
         ConsulClient newClient = PowerMockito.mock(ConsulClient.class);
         when(clientFactory.getClient("second", 8100)).thenReturn(newClient);
         when(consulClient.getKVValues(FACILITY)).thenThrow(new TransportException(null));
-        when(newClient.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT)).thenReturn(new Response<>(new ArrayList<>(), 0l, true, 0l));
+        when(newClient.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT)).thenReturn(new Response<>((List<CatalogService>) new ArrayList<CatalogService>(), 0l, true, 0l));
 
         consulConfigurationSource.poll(false, null);
 
         verify(clientFactory, atLeastOnce()).getClient("second", 8100);
-        verify(newClient).getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT);
+        verify(newClient, atMost(2)).getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT);
         Thread.sleep(10);
 
         Assert.assertEquals(10, dc.getInt("key.int"));
@@ -95,7 +96,7 @@ public class ConsulConfigurationSourceTest {
 
     @Test
     public void testPoll() throws Exception {
-        ArrayList<GetValue> arrayList = new ArrayList<>();
+        List<GetValue> arrayList = new ArrayList<>();
         GetValue intValue = new GetValue();
         intValue.setKey(FACILITY + "/" + "key.int");
         intValue.setValue(BaseEncoding.base64().encode("10".getBytes()));
