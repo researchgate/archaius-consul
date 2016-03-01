@@ -17,6 +17,8 @@ import com.ecwid.consul.v1.kv.model.GetValue;
 import com.google.common.io.BaseEncoding;
 import com.netflix.config.DynamicConfiguration;
 import com.netflix.config.FixedDelayPollingScheduler;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,9 +27,6 @@ import org.mockito.Mock;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(ConsulClient.class)
@@ -119,6 +118,35 @@ public class ConsulConfigurationSourceTest {
         Thread.sleep(10);
         Assert.assertEquals(10, dc.getInt("key.int"));
         Assert.assertEquals("Some String", dc.getString("key.string"));
+        Assert.assertEquals(false, dc.getBoolean("key.bool"));
+    }
+
+    @Test
+    public void testWithoutFacility() throws InterruptedException {
+        consulConfigurationSource = new ConsulConfigurationSource(HOSTS, "/", clientFactory);
+        List<GetValue> arrayList = new ArrayList<>();
+        GetValue intValue = new GetValue();
+        intValue.setKey("/" + "key.int");
+        intValue.setValue(BaseEncoding.base64().encode("10".getBytes()));
+        arrayList.add(intValue);
+        GetValue stringValue = new GetValue();
+        stringValue.setKey("/" + "user-service.lab.config");
+        stringValue.setValue(BaseEncoding.base64().encode("Some String".getBytes()));
+        arrayList.add(stringValue);
+        GetValue boolValue = new GetValue();
+        boolValue.setKey("/" + "key.bool");
+        boolValue.setValue(BaseEncoding.base64().encode(Boolean.FALSE.toString().getBytes()));
+        arrayList.add(boolValue);
+
+        response = new Response<>(arrayList, 0l, false, 0l);
+        when(consulClient.getKVValues("/")).thenReturn(response);
+
+        consulConfigurationSource.poll(true, null);
+        dc = new DynamicConfiguration(consulConfigurationSource, new FixedDelayPollingScheduler(-1, 1000000, false));
+
+        Thread.sleep(10);
+        Assert.assertEquals(10, dc.getInt("key.int"));
+        Assert.assertEquals("Some String", dc.getString("user-service.lab.config"));
         Assert.assertEquals(false, dc.getBoolean("key.bool"));
     }
 

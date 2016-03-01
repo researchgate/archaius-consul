@@ -9,12 +9,11 @@ import com.ecwid.consul.v1.kv.model.GetValue;
 import com.google.common.io.BaseEncoding;
 import com.netflix.config.PollResult;
 import com.netflix.config.PolledConfigurationSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConsulConfigurationSource implements PolledConfigurationSource {
 
@@ -42,7 +41,11 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
     private void init(String hostsList, String facility) {
         this.hostsList = hostsList;
         this.facility = facility;
-        this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1) - (facility.endsWith("/") ? 1 : 0);
+        if ("/".equals(facility)) {
+            this.length = 1;
+        } else {
+            this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1) - (facility.endsWith("/") ? 1 : 0);
+        }
     }
 
     @Override
@@ -67,6 +70,7 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
                     return poll(initial, checkPoint);
                 }
             } catch (Exception ex) {
+                System.err.println(ex.getStackTrace());
                 LOGGER.error("Error while polling configuration.", ex);
             }
         }
