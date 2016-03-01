@@ -126,15 +126,15 @@ public class ConsulConfigurationSourceTest {
         consulConfigurationSource = new ConsulConfigurationSource(HOSTS, "/", clientFactory);
         List<GetValue> arrayList = new ArrayList<>();
         GetValue intValue = new GetValue();
-        intValue.setKey("/" + "key.int");
+        intValue.setKey("key.int");
         intValue.setValue(BaseEncoding.base64().encode("10".getBytes()));
         arrayList.add(intValue);
         GetValue stringValue = new GetValue();
-        stringValue.setKey("/" + "user-service.lab.config");
+        stringValue.setKey("user-service.lab.config");
         stringValue.setValue(BaseEncoding.base64().encode("Some String".getBytes()));
         arrayList.add(stringValue);
         GetValue boolValue = new GetValue();
-        boolValue.setKey("/" + "key.bool");
+        boolValue.setKey("key.bool");
         boolValue.setValue(BaseEncoding.base64().encode(Boolean.FALSE.toString().getBytes()));
         arrayList.add(boolValue);
 
@@ -148,6 +148,15 @@ public class ConsulConfigurationSourceTest {
         Assert.assertEquals(10, dc.getInt("key.int"));
         Assert.assertEquals("Some String", dc.getString("user-service.lab.config"));
         Assert.assertEquals(false, dc.getBoolean("key.bool"));
+    }
+
+    @Test
+    public void testWithFacilityWithDots() throws InterruptedException {
+        final String FACILITY_DOTS = "/user-service.lab.config/";
+        int length = FACILITY_DOTS.length();
+        length = FACILITY_DOTS.length() + (FACILITY_DOTS.charAt(0) == '/' ? 0 : 1) - (FACILITY_DOTS.endsWith("/") ? 1 : 0);
+        String sub = ("user-service.lab.config/" + "something").substring(length);
+        System.out.println(sub);
     }
 
 }

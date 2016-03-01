@@ -41,11 +41,7 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
     private void init(String hostsList, String facility) {
         this.hostsList = hostsList;
         this.facility = facility;
-        if ("/".equals(facility)) {
-            this.length = 1;
-        } else {
-            this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1) - (facility.endsWith("/") ? 1 : 0);
-        }
+        this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1) - (facility.endsWith("/") ? 1 : 0);
     }
 
     @Override
@@ -70,7 +66,6 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
                     return poll(initial, checkPoint);
                 }
             } catch (Exception ex) {
-                System.err.println(ex.getStackTrace());
                 LOGGER.error("Error while polling configuration.", ex);
             }
         }
