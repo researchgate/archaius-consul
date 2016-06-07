@@ -12,12 +12,13 @@ targetCompatibility = 1.7
 group = 'net.researchgate.archaius'
 
 repositories {
+    jcenter()
     mavenCentral()
 }
 
 dependencies {
-    compile 'com.netflix.archaius:archaius-core:0.7.3'
-    compile 'com.ecwid.consul:consul-api:1.1.7'
+    compile 'com.netflix.archaius:archaius2-core:2.0.6'
+    compile 'com.ecwid.consul:consul-api:1.1.10'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-all:2.0.2-beta'

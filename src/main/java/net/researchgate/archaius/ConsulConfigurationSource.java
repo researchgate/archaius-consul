@@ -2,95 +2,90 @@ package net.researchgate.archaius;
 
 import com.ecwid.consul.transport.TransportException;
 import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
-import com.ecwid.consul.v1.catalog.model.CatalogService;
 import com.ecwid.consul.v1.kv.model.GetValue;
-import com.google.common.io.BaseEncoding;
-import com.netflix.config.PollResult;
-import com.netflix.config.PolledConfigurationSource;
+import com.netflix.archaius.config.polling.PollingResponse;
+import org.apache.commons.codec.binary.Base64;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConsulConfigurationSource implements PolledConfigurationSource {
+import java.util.*;
+import java.util.concurrent.Callable;
+
+public class ConsulConfigurationSource implements Callable<PollingResponse> {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(ConsulConfigurationSource.class.getName());
-    static final String CONSUL_SERVICE_NAME = "consul";
 
     ConsulClientFactory clientFactory;
 
+    private int current = 0;
     private ConsulClient client;
     private String facility;
     private int length;
-    private String hostsList;
-    private List<CatalogService> consulServices;
+    private List<String> hostsList;
 
-    public ConsulConfigurationSource(String hostsList, String facility, ConsulClientFactory clientFactory) {
+    public ConsulConfigurationSource(String hosts, String facility, ConsulClientFactory clientFactory) {
         this.clientFactory = clientFactory;
-        init(hostsList, facility);
+        init(hosts, facility);
     }
 
-    public ConsulConfigurationSource(String hostsList, String facility) {
+    public ConsulConfigurationSource(String hosts, String facility) {
         this.clientFactory = new ConsulClientFactory();
-        init(hostsList, facility);
+        init(hosts, facility);
     }
 
-    private void init(String hostsList, String facility) {
-        this.hostsList = hostsList;
+    public ConsulConfigurationSource(String facility) {
+        this.clientFactory = new ConsulClientFactory();
+        init(null, facility);
+    }
+
+    private void init(String hosts, String facility) {
+        if (hosts != null) {
+        String[] splitHosts = hosts.split(",");
+            hostsList = Arrays.asList(splitHosts);
+        } else {
+            hostsList = null;
+        }
         this.facility = facility;
         this.length = facility.length() + (facility.charAt(0) == '/' ? 0 : 1) - (facility.endsWith("/") ? 1 : 0);
     }
 
     @Override
-    public PollResult poll(boolean initial, Object checkPoint) {
-        Map<String, Object> properties = new HashMap<>();
+    public PollingResponse call() throws Exception {
+        Map<String, String> properties = new HashMap<>();
         if (client != null || setClient()) {
             try {
                 Response<List<GetValue>> kvValues = client.getKVValues(facility);
                 if (kvValues.getValue() != null && !kvValues.getValue().isEmpty()) {
-                    consulServices = client.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT).getValue();
                     for (GetValue value : kvValues.getValue()) {
                         if (!value.getKey().endsWith("/")) {
-                            byte[] decoded = BaseEncoding.base64().decode(value.getValue());
+                            byte[] decoded = Base64.decodeBase64(value.getValue());
                             properties.put(value.getKey().substring(length), new String(decoded));
                         }
                     }
                 }
-                return PollResult.createFull(properties);
+                return PollingResponse.forSnapshot(properties);
             } catch (TransportException tex) {
-                LOGGER.error("Error while polling configuration. Try another server if available.", tex);
-                if (setClient()) {
-                    return poll(initial, checkPoint);
-                }
+                LOGGER.error("Error while polling configuration.", tex);
+                client = null;
             } catch (Exception ex) {
                 LOGGER.error("Error while polling configuration.", ex);
+                client = null;
             }
         }
-        return null;
+        return PollingResponse.noop();
     }
 
     private boolean setClient() {
-        if (consulServices != null) {
-            for (CatalogService consulService : consulServices) {
-                ConsulClient newClient;
-                try {
-                    newClient = clientFactory.getClient(consulService.getAddress(), consulService.getServicePort());
-                    Response<List<CatalogService>> catalogService = newClient.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT);
-                    if (catalogService.getValue() != null) {
-                        consulServices = catalogService.getValue();
-                        return true;
-                    }
-                } catch (TransportException tex) {
-                    LOGGER.error("Consul service not reachable. " + consulService.getNode(), tex);
-                }
-            }
-        } else {
-            String[] hostsWithPort = hostsList.split(",");
+        if (hostsList != null) {
             ConsulClient newClient;
-            for (String hostWithPort : hostsWithPort) {
+            Collections.shuffle(hostsList);
+            for (String hostWithPort : hostsList) {
                 String[] host = hostWithPort.split(":");
                 if (host.length == 2) {
                     newClient = clientFactory.getClient(host[0], Integer.valueOf(host[1]));
@@ -98,8 +93,7 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
                     newClient = clientFactory.getClient(host[0]);
                 }
                 try {
-                    if (newClient.getHealthChecksForService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT).getValue() != null) {
-                        consulServices = newClient.getCatalogService(CONSUL_SERVICE_NAME, QueryParams.DEFAULT).getValue();
+                    if (newClient.getKVValues(facility) != null) {
                         client = newClient;
                         return true;
                     }
@@ -107,7 +101,15 @@ public class ConsulConfigurationSource implements PolledConfigurationSource {
                     LOGGER.error("Consul service not reachable. " + hostWithPort, tex);
                 }
             }
+        } else {
+            try {
+                client = clientFactory.getClient();
+            } catch (Exception ex) {
+                return false;
+            }
+            return true;
         }
         return false;
     }
+
 }
