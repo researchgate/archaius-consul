@@ -23,7 +23,6 @@ public class ConsulConfigurationSource implements Callable<PollingResponse> {
 
     ConsulClientFactory clientFactory;
 
-    private int current = 0;
     private ConsulClient client;
     private String facility;
     private int length;
@@ -46,7 +45,7 @@ public class ConsulConfigurationSource implements Callable<PollingResponse> {
 
     private void init(String hosts, String facility) {
         if (hosts != null) {
-        String[] splitHosts = hosts.split(",");
+            String[] splitHosts = hosts.split(",");
             hostsList = Arrays.asList(splitHosts);
         } else {
             hostsList = null;
