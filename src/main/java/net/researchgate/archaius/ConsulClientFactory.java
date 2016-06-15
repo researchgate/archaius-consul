@@ -4,6 +4,10 @@ import com.ecwid.consul.v1.ConsulClient;
 
 public class ConsulClientFactory {
 
+    public ConsulClient getClient() {
+        return new ConsulClient();
+    }
+
     public ConsulClient getClient(String host) {
         return new ConsulClient(host);
     }
